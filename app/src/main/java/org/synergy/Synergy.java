@@ -34,6 +34,7 @@ import org.synergy.net.TCPSocketFactory;
 import android.app.Activity;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.os.StrictMode;
 import android.view.Display;
 import android.view.View;
 import android.view.WindowManager;
@@ -51,7 +52,9 @@ public class Synergy extends Activity {
 	static {
 		System.loadLibrary ("synergy-jni");
 	}
-	
+
+	private Client client;
+
 	private class MainLoopThread extends Thread {
 		
 		public void run () {
@@ -80,7 +83,8 @@ public class Synergy extends Activity {
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
-       
+		StrictMode.ThreadPolicy policy = new StrictMode.ThreadPolicy.Builder().permitAll().build();
+		StrictMode.setThreadPolicy(policy);
         SharedPreferences preferences = getPreferences(MODE_PRIVATE);
         String clientName = preferences.getString(PROP_clientName, null);
         if (clientName != null) {
@@ -90,7 +94,13 @@ public class Synergy extends Activity {
         if (serverHost != null) {
         	((EditText) findViewById (R.id.serverHostEditText)).setText(serverHost);
         }
-        
+        Button stop= (Button) findViewById(R.id.stop);
+        stop.setOnClickListener(new View.OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				client.disconnect("leave");
+			}
+		});
         final Button connectButton = (Button) findViewById (R.id.connectButton);    
         connectButton.setOnClickListener (new View.OnClickListener() {
 			public void onClick (View arg) {
@@ -143,7 +153,7 @@ public class Synergy extends Activity {
             
             Log.debug ("Hostname: " + clientName);
             
-			Client client = new Client (getApplicationContext(), clientName, serverAddress, socketFactory, null, basicScreen);
+			 client = new Client (getApplicationContext(), clientName, serverAddress, socketFactory, null, basicScreen);
 			client.connect ();
 
 			if (mainLoopThread == null) {
